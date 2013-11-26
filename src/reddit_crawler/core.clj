@@ -70,22 +70,27 @@
 
 (def neighbour-author-posts-m (memoize neighbour-author-posts))
 
+(defn lazy-mapcat
+  [f coll]
+  (lazy-seq
+   (if (not-empty coll)
+     (concat
+      (f (first coll))
+      (lazy-mapcat f (rest coll))))))
+
 (defn neighbour-posts
   "Get neighboring posts. First we get all of the first author then
   all the second etc."
   [post & {:keys [rc user pass order]
-           :or {rc nil
-                user nil
-                pass nil
-                order 1}
+           :or {order 1}
            :as creds}]
   (let [rc (login creds)
         posts (if (coll? post) post [post])
-        authors (mapcat #(neighbour-post-authors-m % :rc rc) posts)
-        neighbours (mapcat #(neighbour-author-posts-m % :rc rc) authors)]
+        authors (lazy-mapcat #(neighbour-post-authors-m % :rc rc) posts)
+        neighbours (lazy-mapcat #(neighbour-author-posts-m % :rc rc) authors)]
     (println "order: " order ", size:" (count neighbours))
     (if (> order 1)
-      (mapcat #(neighbour-posts % :order (dec order) :rc rc) neighbours)
+      (lazy-mapcat #(neighbour-posts % :order (dec order) :rc rc) neighbours)
       neighbours)))
 
 (defn unique-posts
