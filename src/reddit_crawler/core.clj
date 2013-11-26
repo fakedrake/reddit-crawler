@@ -60,10 +60,15 @@
   [post-id & {:keys [rc user pass] :as creds}]
   (comment-authors (reddit/comments (login creds) post-id)))
 
+(def neighbour-post-authors-m (memoize neighbour-post-authors))
+
 (defn neighbour-author-posts
   "Get psot neighboring authors. Login or login anonymously"
-  ([author & {:keys [rc user pass] :as creds}]
-     (author-posts (reddit/user-submitted (login creds)  author))))
+  [author & {:keys [rc user pass] :as creds}]
+  (when (not= author "[deleted]")
+    (author-posts (reddit/user-submitted (login creds) author))))
+
+(def neighbour-author-posts-m (memoize neighbour-author-posts))
 
 (defn neighbour-posts
   "Get neighboring posts. First we get all of the first author then
@@ -76,8 +81,9 @@
            :as creds}]
   (let [rc (login creds)
         posts (if (coll? post) post [post])
-        authors (mapcat #(neighbour-post-authors % :rc rc) posts)
-        neighbours (mapcat #(neighbour-author-posts % :rc rc) authors)]
+        authors (mapcat #(neighbour-post-authors-m % :rc rc) posts)
+        neighbours (mapcat #(neighbour-author-posts-m % :rc rc) authors)]
+    (println "order: " order ", size:" (count neighbours))
     (if (> order 1)
       (mapcat #(neighbour-posts % :order (dec order) :rc rc) neighbours)
       neighbours)))
