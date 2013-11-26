@@ -33,11 +33,11 @@
   "Get items from a tree based on their immediate parent."
   [tree key]
   (apply sorted-set
-   (remove nil?
-           (map
-            (fn [[k v]]
-              (if (= (last k) key) v))
-            (seq (flatten-keys tree))))))
+         (remove nil?
+                 (map
+                  (fn [[k v]]
+                    (if (= (last k) key) v))
+                  (seq (flatten-keys tree))))))
 
 
 (defn comment-authors
@@ -49,6 +49,31 @@
   "Get post ids from author's posts"
   [author-posts]
   (get-items author-posts :id))
+
+(defn login
+  "Make sure to return a valid rc"
+  [creds]
+  (or (:rc creds) (reddit/login (:user creds) (:pass creds))))
+
+(defn neighbour-post-authors
+  "Get psot neighboring authors. Login or login anonymously"
+  [post-id & {:keys [rc user pass] :as creds}]
+     (comment-authors (reddit/comments (login creds) post-id)))
+
+(defn neighbour-author-posts
+  "Get psot neighboring authors. Login or login anonymously"
+  ([author & {:keys [rc user pass] :as creds}]
+     (author-posts (reddit/user-submitted (login creds)  author))))
+
+(defn neighbour-posts
+  "Get neighboring posts. First we get all of the first author then
+  all the second etc."
+  [post & {:keys [rc user pass] :as creds}]
+  (let [rc (login creds)
+        ;; Note that to get the authors we make only one call to
+        ;; reddit so dont break your head over making this lazy
+        authors (neighbour-post-authors post :rc rc)]
+    (mapcat #(neighbour-author-posts % :rc rc) authors)))
 
 (defn -main
   "Main function."

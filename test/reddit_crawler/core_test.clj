@@ -1,4 +1,4 @@
-(ns reddit-crawler.core-test
+(ns reddit_crawler.core-test
   (:require [clojure.test :refer :all]
             [clojure.set :refer :all]
             [reddit-crawler.core :refer :all]
@@ -7,89 +7,8 @@
 (def rc (reddit/login "clojurepr" "12345"))
 (def test-id "1r9ze0")
 (def test-id2 "1r58si")
-(def real-post [[{:kind "t3",
-                  :data
-                  {:author "captionday",
-                   :name "t3_1r9ze0",
-                   }}]
-                [{:kind "t1",
-                  :data
-                  {:author "WEED_WIZARD",
-                   :name "t1_cdl4nsi",
-                   :replies
-                   {:kind "Listing",
-                    :data
-                    {:modhash "2hhvptgb2bb7fa3f7142e748f0e1efc4dfea43053e953faa37",
-                     :children
-                     [{:kind "t1",
-                       :data
-                       {:author "pornitoueleus",
-                        :name "t1_cdl7uab",
-                        :replies
-                        {:kind "Listing",
-                         :data
-                         {:modhash
-                          "2hhvptgb2bb7fa3f7142e748f0e1efc4dfea43053e953faa37",
-                          :children
-                          [{:kind "t1",
-                            :data
-                            {:author "pornitoueleus",
-                             :name "t1_cdl7udo",
-                             :replies "",
-                             }}],
-                          :after nil,
-                          :before nil}},
-                        }}
-                      {:kind "t1",
-                       :data
-                       {:author "pornitoueleus",
-                        :name "t1_cdl7ung",
-                        :replies "",
-                        }}],
-                     :after nil,
-                     :before nil}},
-                   }}
-                 {:kind "t1",
-                  :data
-                  {:author "pornitoueleus",
-                   :name "t1_cdl7u29",
-                   :replies "",
-                   }}]])
-(def simple-real-post
-  {:author "WEED_WIZARD"
-   :name "t1_cdl4nsi"
-   :replies
-   {:data
-    {:modhash "2hhvptgb2bb7fa3f7142e748f0e1efc4dfea43053e953faa37"
-     :children
-     [{:kind "t1"
-       :data
-       {:author "pornitoueleus"
-        :name "t1_cdl7uab"
-        :replies
-        {:kind "Listing"
-         :data
-         {:modhash
-          "2hhvptgb2bb7fa3f7142e748f0e1efc4dfea43053e953faa37"
-          :children
-          [{:kind "t1"
-            :data
-            {:author "pornitoueleus"
-             :name "t1_cdl7udo"
-             :replies ""
-             }}]
-          :after nil
-          :before nil}}
-        }}
-      {:kind "t1"
-       :data
-       {:author "pornitoueleus"
-        :name "t1_cdl7ung"
-        :replies ""
-        }}]
-     :after nil
-     :before nil}}
-   })
+(def test-pic "1rgowj")
+(def test-pic-neighbors ["1q6pbz" "1qn3eo" "1rgowj" "1f5gi6" "1f5q0s" "1fc7k2" "1fpnn5" "1hbuzh" "1hmoto" "1hn0r8" "1hn3ax" "1ocr41"])
 
 (deftest comment-authors-test
   (testing "Comment tree authors."
@@ -104,9 +23,21 @@
 (deftest comment-authors-field-test
   (testing "Actually download a thread."
     (is (subset? #{"WEED_WIZARD" "captionday" "clojurepr" "pornitoueleus"}
-                 (comment-authors (reddit/comments rc test-id))))))
+                 (comment-authors (reddit/comments rc test-id)))))
+
+  (testing "Actually download a thread with the nice interface."
+    (is (subset? #{"WEED_WIZARD" "captionday" "clojurepr" "pornitoueleus"}
+                 (neighbour-post-authors test-id))))
+
+  (testing "Actually download a thread."
+    (is (subset? #{"WEED_WIZARD" "captionday" "clojurepr" "pornitoueleus"}
+                 (neighbour-post-authors test-id :user "clojurepr" :pass "12345")))))
 
 (deftest authors-posts-test
   (testing "From the posts of an author."
     (is (subset? #{"1qmeuo"}
                  (author-posts (reddit/user-submitted rc "clojurepr"))))))
+
+(deftest neighbouring-posts-test
+  (testing "Neighbouring posts."
+    (is (subset? (set test-pic-neighbors) (set (neighbour-posts test-pic :rc rc))))))
