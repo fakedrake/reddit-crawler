@@ -58,7 +58,7 @@
 (defn neighbour-post-authors
   "Get psot neighboring authors. Login or login anonymously"
   [post-id & {:keys [rc user pass] :as creds}]
-     (comment-authors (reddit/comments (login creds) post-id)))
+  (comment-authors (reddit/comments (login creds) post-id)))
 
 (defn neighbour-author-posts
   "Get psot neighboring authors. Login or login anonymously"
@@ -68,12 +68,25 @@
 (defn neighbour-posts
   "Get neighboring posts. First we get all of the first author then
   all the second etc."
-  [post & {:keys [rc user pass] :as creds}]
+  [post & {:keys [rc user pass order]
+           :or {rc nil
+                user nil
+                pass nil
+                order 1}
+           :as creds}]
   (let [rc (login creds)
-        ;; Note that to get the authors we make only one call to
-        ;; reddit so dont break your head over making this lazy
-        authors (neighbour-post-authors post :rc rc)]
-    (mapcat #(neighbour-author-posts % :rc rc) authors)))
+        posts (if (coll? post) post [post])
+        authors (mapcat #(neighbour-post-authors % :rc rc) posts)
+        neighbours (mapcat #(neighbour-author-posts % :rc rc) authors)]
+    (if (> order 1)
+      (mapcat #(neighbour-posts % :order (dec order) :rc rc) neighbours)
+      neighbours)))
+
+(defn unique-posts
+  "From a list posts get a dict that show how many of each there was
+  in a set."
+  [posts]
+  (reduce #(assoc %1 %2 (inc (%1 %2 0))) {} posts))
 
 (defn -main
   "Main function."
