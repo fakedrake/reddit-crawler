@@ -99,6 +99,15 @@
   [posts]
   (reduce #(assoc %1 %2 (inc (%1 %2 0))) {} posts))
 
+(defn post-prop
+  "Get a post property given the id. Just so you konw :selftext is the
+  body and :title is the title" [post-id prop & {:keys [rc user pass
+  order]
+                   :or {order 1}
+                   :as creds}]
+  (first
+   (get-items (reddit/comments (login creds) post-id) prop)))
+
 (defn -main
   "Main function."
   [& args]
