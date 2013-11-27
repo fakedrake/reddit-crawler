@@ -48,21 +48,19 @@
       (lazy-mapcat #(neighbour-posts % :order (dec order) :rc rc) neighbours)
       neighbours)))
 
-;; A list of predicates that will pull from a post a single lazy seq
-;; of other posts and rate them
-
 (defn comment-retriever
   "Retriever using the comments authors."
   [post rating & rc]
   (let [authors (lazy-enumerate (neighbour-post-authors-m posts :rc rc))
-        posts (map (fn [[i a]] [(/ 1 i) (neighbour-author-posts-m a :rc rc)])
-                   authors)]
-    (lazy-mapcat
-     (fn [[ra authors-posts]]
-       (map (fn [[ip p]]
-              [(* ra (/ 1 ip)) p])
+        grouped-posts (map (fn [[i a]]  ;XXX: use upvotes for rating
+                             [(/ 1 i) (neighbour-author-posts-m a :rc rc)])
+                           authors)]
+    (lazy-mapcat                        ;Ungroup and rerate posts
+     (fn [[author-rating authors-posts]]
+       (map (fn [[i p]]
+              [(* author-rating (/ 1 ip)) p])
             (lazy-enumerate authors-posts)))
-     posts)))
+     grouped-posts)))
 
 (def post-retrievers
   "Functions that receve a post and it's rating and optionally a login

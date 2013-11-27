@@ -27,14 +27,17 @@
   [m] (flatten-keys* {} [] (vec m)))
 
 (defn get-items
-  "Get items from a tree based on their immediate parent."
+  "Get items from a tree based on their immediate parent. Remove
+  duplicates. The items are in the order they were found and in
+  reverse order of depth."
   [tree key]
-  (apply sorted-set
-         (remove nil?
-                 (map
-                  (fn [[k v]]
-                    (if (= (last k) key) v))
-                  (seq (flatten-keys tree))))))
+  (map last
+       (sorted-set
+        (remove nil?
+                (map
+                 (fn [[k v]]
+                   (if (= (last k) key) [(count k) v]))
+                 (seq (flatten-keys tree)))))))
 
 (defn lazy-mapcat
   "Like mapcat but lazy. Actually like python's chain of itertools."
